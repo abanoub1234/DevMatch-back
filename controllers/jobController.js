@@ -92,10 +92,10 @@ export const getAllJobs = async(req, res) => {
     }
 };
 
-// Get job by ID
+// Get job by ID with recruiter info
 export const getJobById = async(req, res) => {
     try {
-        const job = await Job.findById(req.params.id);
+        const job = await Job.findById(req.params.id).populate('recruiter_id');
         if (!job) return res.status(404).json({ message: 'Job not found' });
         res.status(200).json(job);
     } catch (error) {

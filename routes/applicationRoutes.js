@@ -36,4 +36,11 @@ router.put(
     applicationController.acceptApplication
 );
 
+// Get application by ID (with job and programmer info)
+router.get(
+    '/:id',
+    authMiddleware.authenticate,
+    applicationController.getApplicationById
+);
+
 export default router;

@@ -45,7 +45,7 @@ export const getApplicationsByRecruiter = async(req, res) => {
     }
 };
 
-// Recruiter: Get all applications for a specific job they own, including programmer info
+// Recruiter: Get all applications for a specific job they own, including programmer info and job details
 export const getApplicationsByRecruiterAndJob = async(req, res) => {
     try {
         const recruiter_id = req.user.id;
@@ -53,7 +53,11 @@ export const getApplicationsByRecruiterAndJob = async(req, res) => {
         const job = await Job.findOne({ _id: job_id, recruiter_id });
         if (!job) return res.status(404).json({ message: 'Job not found or not owned by recruiter' });
         const applications = await Application.find({ job_id })
-            .populate('applicant_id'); // populate programmer info
+            .populate({
+                path: 'job_id',
+                populate: { path: 'recruiter_id' }
+            })
+            .populate('applicant_id');
         res.status(200).json(applications);
     } catch (error) {
         res.status(500).json({ message: 'Error fetching applications', error: error.message });
@@ -76,5 +80,21 @@ export const acceptApplication = async(req, res) => {
         res.status(200).json({ message: 'Application accepted and job closed', application });
     } catch (error) {
         res.status(500).json({ message: 'Error accepting application', error: error.message });
+    }
+};
+
+// Recruiter: Get application by ID with job and programmer info (and job details)
+export const getApplicationById = async(req, res) => {
+    try {
+        const application = await Application.findById(req.params.id)
+            .populate({
+                path: 'job_id',
+                populate: { path: 'recruiter_id' } // also get recruiter info in job
+            })
+            .populate('applicant_id');
+        if (!application) return res.status(404).json({ message: 'Application not found' });
+        res.status(200).json(application);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching application', error: error.message });
     }
 };
