@@ -18,10 +18,10 @@ export const userSchema = Joi.object({
             "string.min": "Password must be at least 8 characters",
             "string.pattern.base": "Password must contain uppercase, lowercase, and number"
         }),
-    confirmPassword: Joi.any().valid(Joi.ref('password')).required().messages({
-        "any.only": "Passwords do not match",
-        "any.required": "Please confirm your password"
-    }),
+    // confirmPassword: Joi.any().valid(Joi.ref('password')).required().messages({
+    //     "any.only": "Passwords do not match",
+    //     "any.required": "Please confirm your password"
+    // }),
     role: Joi.string().valid("user", "admin", "recruiter", "programmer").required().messages({
         "any.only": "Please select your role"
     }),
