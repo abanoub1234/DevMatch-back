@@ -14,4 +14,6 @@ router.put("/:id", userController.updateUserById);
 router.post("/", userController.createUser);
 router.delete("/:id", userController.deleteUser);
 
+
+
 export default router;

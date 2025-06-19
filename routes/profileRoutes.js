@@ -14,6 +14,15 @@ router.post(
     profileController.completeRecruiterProfile
 );
 
+// Edit recruiter profile
+router.put(
+    '/recruiter',
+    authMiddleware.authenticate,
+    authMiddleware.checkRole(['recruiter']),
+    validateRecruiterProfile,
+    profileController.editRecruiterProfile
+);
+
 // // Programmer profile completion
 // router.post(
 //     '/programmer',
