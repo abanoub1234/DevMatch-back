@@ -1,6 +1,6 @@
-const User = require("../models/User.mongo");
+import User from "../models/User.mongo.js";
 
-exports.getAllUsers = async (req, res) => {
+export const getAllUsers = async (req, res) => {
   console.log("[userController] getAllUsers called");
   try {
     const users = await User.find();
@@ -13,7 +13,7 @@ exports.getAllUsers = async (req, res) => {
 };
 
 // Find user by custom id field or MongoDB _id
-exports.getUserById = async (req, res) => {
+export const getUserById = async (req, res) => {
   try {
     let user = await User.findOne({ id: req.params.id });
     if (!user) {
@@ -34,7 +34,7 @@ exports.getUserById = async (req, res) => {
   }
 };
 
-exports.createUser = async (req, res) => {
+export const createUser = async (req, res) => {
   try {
     // Check if email already exists
     const existing = await User.findOne({ email: req.body.email });
@@ -49,7 +49,7 @@ exports.createUser = async (req, res) => {
   }
 };
 
-exports.deleteUser = async (req, res) => {
+export const deleteUser = async (req, res) => {
   try {
     const result = await User.findByIdAndDelete(req.params.id);
     if (!result) return res.status(404).json({ message: "User not found" });
@@ -60,7 +60,7 @@ exports.deleteUser = async (req, res) => {
 };
 
 // Update user by custom id field or MongoDB _id
-exports.updateUserById = async (req, res) => {
+export const updateUserById = async (req, res) => {
   try {
     // List of required fields for profile completion (must be in request body)
     const requiredFields = [
@@ -127,7 +127,7 @@ exports.updateUserById = async (req, res) => {
 };
 
 // Get all freelancers (programmers)
-exports.getAllFreelancers = async (req, res) => {
+export const getAllFreelancers = async (req, res) => {
   try {
     const freelancers = await User.find({ role: 'programmer' });
     res.json(freelancers);
@@ -137,7 +137,7 @@ exports.getAllFreelancers = async (req, res) => {
 };
 
 // Get all unique technologies from all programmers
-exports.getAllTechnologies = async (req, res) => {
+export const getAllTechnologies = async (req, res) => {
   try {
     const programmers = await User.find({ role: 'programmer' }, 'technology');
     // Flatten and deduplicate technologies
