@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import connectDB from './models/db.js';
 import dotenv from 'dotenv';
-
+import massageroute from "./routes/message.route.js"
 import userRoutes from "./routes/userRoutes.js";
 import jobRoutes from './routes/jobRoutes.js';
 import applicationRoutes from './routes/applicationRoutes.js';
@@ -37,7 +37,7 @@ app.use('/api/jobs', jobRoutes);
 app.use('/api/applications', applicationRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
-
+app.use("/api/messages", massageroute);
 
 app.get('/test', (req, res) => {
   res.send('CORS is working');
