@@ -7,7 +7,7 @@ import { getReceiverSocketId, io } from "../lib/socket.js";
 
 export const getUsersForSidebar = async (req, res) => {
   try {
-    const loggedInUserId = req.user._id;
+    const loggedInUserId = req.user.id;
     const loggedInUser = await User.findById(loggedInUserId);
     if (!loggedInUser) return res.status(404).json({ error: "User not found" });
 
@@ -42,7 +42,7 @@ export const getUsersForSidebar = async (req, res) => {
 export const getMessages = async (req, res) => {
   try {
     const { id: userToChatId } = req.params;
-    const myId = req.user._id;
+    const myId = req.user.id;
 
     const messages = await Message.find({
       $or: [
@@ -62,7 +62,8 @@ export const sendMessage = async (req, res) => {
   try {
     const { text, image } = req.body;
     const { id: receiverId } = req.params;
-    const senderId = req.user._id;
+    // Accept both _id and id from JWT for compatibility
+    const senderId = req.user._id || req.user.id;
 
     // If image is provided, just save the base64 string directly
     let imageUrl = image || null;
