@@ -8,7 +8,8 @@ import jobRoutes from './routes/jobRoutes.js';
 import applicationRoutes from './routes/applicationRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import profileRoutes from './routes/profileRoutes.js';
-
+import massagerouteBrodcast from './routes/messageRoutesBrodcast.js'
+import commentroute from './routes/commentRoutes.js'
 dotenv.config();
 console.log('JWT_SECRET:', process.env.JWT_SECRET);
 
@@ -38,7 +39,10 @@ app.use('/api/applications', applicationRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
 app.use("/api/messages", massageroute);
-
+//massage brodcast
+app.use("/api/messagesbroadcast", massagerouteBrodcast);
+app.use('/api/comments', commentroute);
+//
 app.get('/test', (req, res) => {
   res.send('CORS is working');
 });
