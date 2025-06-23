@@ -1,3 +1,4 @@
+// recruiterProfileValidation.js
 import Joi from "joi";
 
 const currentYear = new Date().getFullYear();
@@ -26,16 +27,34 @@ const recruiterProfileSchema = Joi.object({
     location: Joi.string().trim().required().messages({
         "string.empty": "Location is required"
     }),
-    founded_year: Joi.string().required().pattern(/^\d{4}$/).custom((value, helpers) => {
-        if (parseInt(value) > currentYear) {
-            return helpers.message("Year cannot be in the future");
-        }
-        return value;
-    }).messages({
-        "string.empty": "Founded year is required",
-        "string.pattern.base": "Please enter a valid year (YYYY)"
-    }),
+    founded_year: Joi.number()
+        .integer()
+        .min(1000)
+        .max(currentYear)
+        .required()
+        .messages({
+            "number.base": "Founded year must be a number",
+            "number.empty": "Founded year is required",
+            "number.min": "Please enter a valid year (YYYY)",
+            "number.max": "Year cannot be in the future",
+            "any.required": "Founded year is required"
+        }),
     image: Joi.string().uri().allow('').optional()
 });
+
+export const validateRecruiterProfile = (req, res, next) => {
+    // Validate only the text fields, not the file
+    const { error } = recruiterProfileSchema.validate(req.body);
+
+    if (error) {
+        const errorMessage = error.details.map(detail => detail.message).join(', ');
+        return res.status(400).json({
+            message: 'Validation failed',
+            errors: errorMessage
+        });
+    }
+
+    next();
+};
 
 export default recruiterProfileSchema;

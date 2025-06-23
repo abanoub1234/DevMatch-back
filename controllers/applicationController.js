@@ -25,27 +25,40 @@ export const createApplication = async(req, res) => {
         });
 
         await application.save();
-        res.status(201).json({ message: 'Application submitted successfully', application });
+        // Populate applicant and job for response
+        const populatedApplication = await Application.findById(application._id)
+            .populate('applicant_id')
+            .populate('job_id');
+        res.status(201).json({ message: 'Application submitted successfully', application: populatedApplication });
     } catch (error) {
         res.status(500).json({ message: 'Error applying to job', error: error.message });
     }
 };
 
-// Recruiter: Get all applications for their jobs, including programmer info
+// Recruiter: Get all applications for their jobs, including programmer and job info
 export const getApplicationsByRecruiter = async(req, res) => {
     try {
         const recruiter_id = req.user.id;
         const jobs = await Job.find({ recruiter_id }).select('_id');
         const jobIds = jobs.map(job => job._id);
         const applications = await Application.find({ job_id: { $in: jobIds } })
-            .populate('applicant_id'); // populate programmer info
-        res.status(200).json(applications);
+            .populate({
+                path: 'applicant_id',
+                strictPopulate: false
+            })
+            .populate({
+                path: 'job_id',
+                strictPopulate: false
+            });
+        // Filter out applications where job_id is not populated (job deleted)
+        const filtered = applications.filter(app => app.job_id && typeof app.job_id === 'object');
+        res.status(200).json(filtered);
     } catch (error) {
         res.status(500).json({ message: 'Error fetching applications', error: error.message });
     }
 };
 
-// Recruiter: Get all applications for a specific job they own, including programmer info
+// Recruiter: Get all applications for a specific job they own, including programmer and job info
 export const getApplicationsByRecruiterAndJob = async(req, res) => {
     try {
         const recruiter_id = req.user.id;
@@ -53,8 +66,16 @@ export const getApplicationsByRecruiterAndJob = async(req, res) => {
         const job = await Job.findOne({ _id: job_id, recruiter_id });
         if (!job) return res.status(404).json({ message: 'Job not found or not owned by recruiter' });
         const applications = await Application.find({ job_id })
-            .populate('applicant_id'); // populate programmer info
-        res.status(200).json(applications);
+            .populate({
+                path: 'applicant_id',
+                strictPopulate: false
+            })
+            .populate({
+                path: 'job_id',
+                strictPopulate: false
+            });
+        const filtered = applications.filter(app => app.job_id && typeof app.job_id === 'object');
+        res.status(200).json(filtered);
     } catch (error) {
         res.status(500).json({ message: 'Error fetching applications', error: error.message });
     }
@@ -65,7 +86,7 @@ export const acceptApplication = async(req, res) => {
     try {
         const recruiter_id = req.user.id;
         const { application_id } = req.params;
-        const application = await Application.findById(application_id);
+        let application = await Application.findById(application_id);
         if (!application) return res.status(404).json({ message: 'Application not found' });
         const job = await Job.findOne({ _id: application.job_id, recruiter_id });
         if (!job) return res.status(404).json({ message: 'Job not found or not owned by recruiter' });
@@ -73,8 +94,94 @@ export const acceptApplication = async(req, res) => {
         await application.save();
         job.status = 'closed';
         await job.save();
+        // Populate applicant and job for response
+        application = await Application.findById(application_id)
+            .populate('applicant_id')
+            .populate('job_id');
         res.status(200).json({ message: 'Application accepted and job closed', application });
     } catch (error) {
         res.status(500).json({ message: 'Error accepting application', error: error.message });
+    }
+};
+
+// Recruiter: Reject an application
+export const rejectApplication = async(req, res) => {
+    try {
+        const recruiter_id = req.user.id;
+        const { application_id } = req.params;
+        let application = await Application.findById(application_id);
+        if (!application) return res.status(404).json({ message: 'Application not found' });
+        // Ensure the recruiter owns the job
+        const job = await Job.findOne({ _id: application.job_id, recruiter_id });
+        if (!job) return res.status(404).json({ message: 'Job not found or not owned by recruiter' });
+        application.status = 'rejected';
+        await application.save();
+        // Populate applicant and job for response
+        application = await Application.findById(application_id)
+            .populate('applicant_id')
+            .populate('job_id');
+        res.status(200).json({ message: 'Application rejected', application });
+    } catch (error) {
+        res.status(500).json({ message: 'Error rejecting application', error: error.message });
+    }
+};
+
+// Get a single application by ID (for recruiter or programmer)
+export const getApplicationById = async(req, res) => {
+    try {
+        const { application_id } = req.params;
+        const application = await Application.findById(application_id)
+            .populate('applicant_id')
+            .populate('job_id');
+        if (!application || !application.applicant_id || !application.job_id) {
+            return res.status(404).json({ message: 'Application not found or missing related data' });
+        }
+        res.status(200).json(application);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching application', error: error.message });
+    }
+};
+
+// Get all applications (optionally filter by job_id)
+export const getApplications = async(req, res) => {
+    try {
+        const { job_id } = req.query;
+        let query = {};
+        if (job_id) query.job_id = job_id;
+        const applications = await Application.find(query)
+            .populate('applicant_id')
+            .populate('job_id');
+        res.status(200).json(applications);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching applications', error: error.message });
+    }
+};
+
+// Update application status (generic PATCH)
+export const updateApplicationStatus = async(req, res) => {
+    try {
+        const { application_id } = req.params;
+        const { status } = req.body;
+        const application = await Application.findByIdAndUpdate(
+            application_id, { status }, { new: true }
+        ).populate('applicant_id').populate('job_id');
+        if (!application) {
+            return res.status(404).json({ message: 'Application not found' });
+        }
+        res.status(200).json(application);
+    } catch (error) {
+        res.status(500).json({ message: 'Failed to update application status', error: error.message });
+    }
+};
+
+// Check if programmer has applied to a specific job
+export const checkIfApplied = async(req, res) => {
+    try {
+        const jobId = req.params.jobId;
+        const userId = req.user.id;
+        const existing = await Application.findOne({ job_id: jobId, applicant_id: userId });
+        res.status(200).json({ hasApplied: !!existing });
+    } catch (error) {
+        res.status(500).json({ message: 'Error checking application', error: error.message });
     }
 };

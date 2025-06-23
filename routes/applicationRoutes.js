@@ -36,4 +36,41 @@ router.put(
     applicationController.acceptApplication
 );
 
+// Recruiter: Reject an application
+router.put(
+    '/reject/:application_id',
+    authMiddleware.authenticate,
+    authMiddleware.checkRole(['recruiter']),
+    applicationController.rejectApplication
+);
+
+// Get a single application by ID
+router.get(
+    '/:application_id',
+    authMiddleware.authenticate,
+    applicationController.getApplicationById
+);
+
+// Get all applications (optionally filter by job_id)
+router.get(
+    '/',
+    authMiddleware.authenticate,
+    applicationController.getApplications
+);
+
+// Update application status (generic PATCH)
+router.patch(
+    '/:application_id',
+    authMiddleware.authenticate,
+    applicationController.updateApplicationStatus
+);
+
+// Check if programmer has applied to a specific job
+router.get(
+    '/check/:jobId',
+    authMiddleware.authenticate,
+    authMiddleware.checkRole(['programmer']),
+    applicationController.checkIfApplied
+);
+
 export default router;
