@@ -11,6 +11,13 @@ router.get('/', jobController.getAllJobs);
 // Public: Get job by ID
 router.get('/:id', jobController.getJobById);
 
+// Get job details + whether programmer applied
+router.get(
+    '/with-check/:id',
+    authMiddleware.authenticate,
+    jobController.getJobWithApplicationCheck
+);
+
 // Recruiter: Create job
 router.post(
     '/',

@@ -92,3 +92,27 @@ export const deleteJobById = async(req, res) => {
         res.status(500).json({ message: 'Error deleting job', error: error.message });
     }
 };
+
+// Get job details + whether programmer applied
+export const getJobWithApplicationCheck = async(req, res) => {
+    try {
+        const { id } = req.params;
+        const job = await Job.findById(id);
+        if (!job) return res.status(404).json({ message: 'Job not found' });
+
+        let hasApplied = false;
+        if (req.user.role === 'programmer') {
+            const Application = (await
+                import ('../models/Application.mongo.js')).default;
+            const application = await Application.findOne({
+                job_id: id,
+                applicant_id: req.user.id
+            });
+            hasApplied = !!application;
+        }
+
+        res.status(200).json({ job, hasApplied });
+    } catch (error) {
+        res.status(500).json({ message: 'Error loading job', error: error.message });
+    }
+};

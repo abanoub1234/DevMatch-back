@@ -1,6 +1,7 @@
 import express from "express";
 import * as userController from "../controllers/userController.js";
 import userLogger from "../middleware/userLogger.js";
+import * as authMiddleware from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -14,6 +15,10 @@ router.put("/:id", userController.updateUserById);
 router.post("/", userController.createUser);
 router.delete("/:id", userController.deleteUser);
 
+// Get current user from token
+router.get('/me', authMiddleware.authenticate, (req, res) => {
+    res.status(200).json(req.user);
+});
 
 
 export default router;
