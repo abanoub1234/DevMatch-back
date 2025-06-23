@@ -8,12 +8,19 @@ import jobRoutes from './routes/jobRoutes.js';
 import applicationRoutes from './routes/applicationRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import profileRoutes from './routes/profileRoutes.js';
-import massagerouteBrodcast from './routes/messageRoutesBrodcast.js'
+import massagerouteBrodcast from './routes/messageRoutesBrodCast.js'
 import commentroute from './routes/commentRoutes.js'
+import paymentRoutes from './routes/paymentRoutes.js';
+import bodyParser from 'body-parser';
+import { handleStripeWebhook } from './controllers/paymentController.js';
 dotenv.config();
 console.log('JWT_SECRET:', process.env.JWT_SECRET);
 
 const app = express();
+
+// Stripe webhook route (must be before express.json for this route)
+app.post('/api/payments/webhook', bodyParser.raw({ type: 'application/json' }), handleStripeWebhook);
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
@@ -42,6 +49,7 @@ app.use("/api/messages", massageroute);
 //massage brodcast
 app.use("/api/messagesbroadcast", massagerouteBrodcast);
 app.use('/api/comments', commentroute);
+app.use('/api/payments', paymentRoutes);
 //
 app.get('/test', (req, res) => {
   res.send('CORS is working');

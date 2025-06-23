@@ -19,7 +19,8 @@ const userSchema = new mongoose.Schema({
     skills: String,
     technology: [String],
     isProfileComplete: { type: Boolean, default: false },
-    aboutMe: String
+    aboutMe: String,
+    isPaid: { type: Boolean, default: false } // Add isPaid flag
 });
 
 export default mongoose.model('User', userSchema);
