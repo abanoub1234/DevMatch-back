@@ -111,6 +111,7 @@ export const login = async(req, res) => {
             email: user.email,
             role: user.role,
             isProfileComplete: user.isProfileComplete,
+            image:user.image
           
 
         };
