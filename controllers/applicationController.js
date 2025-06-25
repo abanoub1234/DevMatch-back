@@ -1,5 +1,7 @@
 import Application from '../models/Application.mongo.js';
 import Job from '../models/Job.mongo.js';
+import { sendEmail } from '../utils/email.js';
+import { io } from '../server.js';
 
 // Programmer applies to a job
 export const createApplication = async(req, res) => {
@@ -81,47 +83,93 @@ export const getApplicationsByRecruiterAndJob = async(req, res) => {
     }
 };
 
-// Recruiter: Accept an application and close the job
+// Accept Application
 export const acceptApplication = async(req, res) => {
     try {
         const recruiter_id = req.user.id;
         const { application_id } = req.params;
-        let application = await Application.findById(application_id);
-        if (!application) return res.status(404).json({ message: 'Application not found' });
-        const job = await Job.findOne({ _id: application.job_id, recruiter_id });
-        if (!job) return res.status(404).json({ message: 'Job not found or not owned by recruiter' });
-        application.status = 'accepted';
-        await application.save();
-        job.status = 'closed';
-        await job.save();
-        // Populate applicant and job for response
-        application = await Application.findById(application_id)
+
+        let application = await Application.findById(application_id)
             .populate('applicant_id')
             .populate('job_id');
+
+        if (!application) return res.status(404).json({ message: 'Application not found' });
+
+        const job = await Job.findOne({ _id: application.job_id._id, recruiter_id });
+        if (!job) return res.status(404).json({ message: 'Job not found or not owned by recruiter' });
+
+        application.status = 'accepted';
+        await application.save();
+
+        job.status = 'closed';
+        await job.save();
+
+        // ✉️ Send email
+        await sendEmail(
+            application.applicant_id.email,
+            'Application Accepted',
+            `🎉 Congratulations!\nYour application for the job "${application.job_id.title}" has been accepted.`
+        );
+
+        // 🔔 Emit real-time notification (always use string for room and event)
+        const applicantRoom = application.applicant_id._id.toString();
+        const eventName = `application-update-${applicantRoom}`;
+        console.log('Emitting notification to room:', applicantRoom, eventName);
+        // Debug: print all rooms for this socket
+        if (io.sockets.adapter.rooms) {
+            console.log('Current rooms:', Array.from(io.sockets.adapter.rooms.keys()));
+        }
+        io.to(applicantRoom).emit(eventName, {
+            message: `✅ Your application for "${application.job_id.title}" was accepted.`,
+        });
+
         res.status(200).json({ message: 'Application accepted and job closed', application });
     } catch (error) {
+        console.error('Accept error:', error);
         res.status(500).json({ message: 'Error accepting application', error: error.message });
     }
 };
 
-// Recruiter: Reject an application
+// Reject Application
 export const rejectApplication = async(req, res) => {
     try {
         const recruiter_id = req.user.id;
         const { application_id } = req.params;
-        let application = await Application.findById(application_id);
-        if (!application) return res.status(404).json({ message: 'Application not found' });
-        // Ensure the recruiter owns the job
-        const job = await Job.findOne({ _id: application.job_id, recruiter_id });
-        if (!job) return res.status(404).json({ message: 'Job not found or not owned by recruiter' });
-        application.status = 'rejected';
-        await application.save();
-        // Populate applicant and job for response
-        application = await Application.findById(application_id)
+
+        let application = await Application.findById(application_id)
             .populate('applicant_id')
             .populate('job_id');
+
+        if (!application) return res.status(404).json({ message: 'Application not found' });
+
+        const job = await Job.findOne({ _id: application.job_id._id, recruiter_id });
+        if (!job) return res.status(404).json({ message: 'Job not found or not owned by recruiter' });
+
+        application.status = 'rejected';
+        await application.save();
+
+        // ✉️ Send email
+        await sendEmail(
+            application.applicant_id.email,
+            'Application Rejected',
+            `😞 We're sorry.\nYour application for the job "${application.job_id.title}" was rejected.`
+        );
+
+        // 🔔 Emit real-time notification (always use string for room and event)
+        const applicantRoom = application.applicant_id._id.toString();
+        const eventName = `application-update-${applicantRoom}`;
+        console.log('Emitting notification to room:', applicantRoom, eventName);
+        // Debug: print all rooms for this socket
+        if (io.sockets.adapter.rooms) {
+            console.log('Current rooms:', Array.from(io.sockets.adapter.rooms.keys()));
+        }
+        io.to(applicantRoom).emit(eventName, {
+            message: `❌ Your application for "${application.job_id.title}" was rejected.`,
+        });
+
         res.status(200).json({ message: 'Application rejected', application });
     } catch (error) {
+        console.error('Reject error:', error);
         res.status(500).json({ message: 'Error rejecting application', error: error.message });
     }
 };
