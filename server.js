@@ -13,14 +13,15 @@ import commentroute from './routes/commentRoutes.js'
 import paymentRoutes from './routes/paymentRoutes.js';
 import bodyParser from 'body-parser';
 import { handleStripeWebhook } from './controllers/paymentController.js';
+import { app, server } from "./lib/socket.js";
 dotenv.config();
 console.log('JWT_SECRET:', process.env.JWT_SECRET);
 
-const app = express();
+
 
 // Stripe webhook route (must be before express.json for this route)
 app.post('/api/payments/webhook', bodyParser.raw({ type: 'application/json' }), handleStripeWebhook);
-import { app, server } from "./lib/socket.js";
+
 
 dotenv.config();
 console.log('JWT_SECRET:', process.env.JWT_SECRET);
