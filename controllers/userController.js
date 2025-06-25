@@ -126,6 +126,27 @@ export const updateUserById = async (req, res) => {
   }
 };
 
+// Mark user as paid (for frontend sync after payment)
+export const updateUserByIdPaid = async (userId) => {
+  try {
+    console.log('[updateUserByIdPaid] Called with userId:', userId);
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { isPaid: true },
+      { new: true }
+    );
+    if (!updatedUser) {
+      console.warn('[updateUserByIdPaid] No user found for userId:', userId);
+    } else {
+      console.log('[updateUserByIdPaid] User updated:', updatedUser);
+    }
+    return updatedUser;
+  } catch (err) {
+    console.error('[userController] Error marking user as paid:', err);
+    return null;
+  }
+};
+
 // Get all freelancers (programmers)
 export const getAllFreelancers = async (req, res) => {
   try {
