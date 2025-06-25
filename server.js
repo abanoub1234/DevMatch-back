@@ -20,6 +20,11 @@ const app = express();
 
 // Stripe webhook route (must be before express.json for this route)
 app.post('/api/payments/webhook', bodyParser.raw({ type: 'application/json' }), handleStripeWebhook);
+import { app, server } from "./lib/socket.js";
+
+dotenv.config();
+console.log('JWT_SECRET:', process.env.JWT_SECRET);
+
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
@@ -58,6 +63,7 @@ app.get('/test', (req, res) => {
 
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+
+ server.listen(PORT, () => {
+  console.log(`Server is running with socket.io on http://localhost:${PORT}`);
 });

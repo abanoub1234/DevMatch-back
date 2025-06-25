@@ -53,7 +53,7 @@ export const signup = async(req, res) => {
 
         // Generate token
         const token = jwt.sign({ id: newUser._id, role: newUser.role, email: newUser.email },
-            process.env.JWT_SECRET, { expiresIn: '1h' }
+            process.env.JWT_SECRET, { expiresIn: '12h' }
         );
 
         // Prepare response data
@@ -63,7 +63,9 @@ export const signup = async(req, res) => {
                 id: newUser._id,
                 name: newUser.name,
                 email: newUser.email,
-                role: newUser.role
+                role: newUser.role,
+                isProfileComplete: newUser.isProfileComplete,
+                image:newUser.image
             },
             token
         };
@@ -108,7 +110,10 @@ export const login = async(req, res) => {
             name: user.name,
             email: user.email,
             role: user.role,
-            isProfileComplete: user.isProfileComplete
+            isProfileComplete: user.isProfileComplete,
+            image:user.image
+          
+
         };
 
         // Only include CV URL if user is a programmer and has one
@@ -125,4 +130,44 @@ export const login = async(req, res) => {
         console.error('Login error:', error);
         res.status(500).json({ message: 'Something went wrong' });
     }
+};
+
+
+
+
+export const updateProfile = async (req, res) => {
+  try {
+    const { image } = req.body;
+    const userId =  req.user.id;
+
+    if (!image) {
+      return res.status(400).json({ message: "Profile pic is required" });
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,// by token
+      { image },  // Store Base64 string directly
+      { new: true, runValidators: true }
+    ).select("-password");
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json(updatedUser);
+  } catch (error) {
+    console.error("Error in update profile:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const checkAuth = async(req, res) => {
+  try {
+    console.log(req.user)
+    req.user= await User.findById(req.user.id).select("-password");//add this
+    res.status(200).json(req.user);
+  } catch (error) {
+    console.log("Error in checkAuth controller", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
 };
