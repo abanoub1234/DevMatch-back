@@ -15,7 +15,7 @@ import bodyParser from 'body-parser';
 import { handleStripeWebhook } from './controllers/paymentController.js';
 import { app, server } from "./lib/socket.js";
 dotenv.config();
-console.log('JWT_SECRET:', process.env.JWT_SECRET);
+
 
 
 
