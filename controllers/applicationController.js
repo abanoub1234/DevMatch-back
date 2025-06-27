@@ -1,7 +1,7 @@
 import Application from '../models/Application.mongo.js';
 import Job from '../models/Job.mongo.js';
 import { sendEmail } from '../utils/email.js';
-import { io } from '../server.js';
+import { io } from '../lib/socket.js';
 
 // Programmer applies to a job
 export const createApplication = async(req, res) => {
