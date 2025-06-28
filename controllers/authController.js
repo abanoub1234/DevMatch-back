@@ -1,6 +1,10 @@
 import User from '../models/User.mongo.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
+import sendEmail from '../utils/sendEmail.js';
+import fs from 'fs';
+import path from 'path';
 
 // Signup Controller
 export const signup = async(req, res) => {
@@ -49,23 +53,29 @@ export const signup = async(req, res) => {
             newUser.cv_url = cv_url;
         }
 
+        // Generate verification token
+        const verificationToken = crypto.randomBytes(32).toString('hex');
+        newUser.emailVerificationToken = verificationToken;
         await newUser.save();
 
-        // Generate token
-        const token = jwt.sign({ id: newUser._id, role: newUser.role, email: newUser.email },
-            process.env.JWT_SECRET, { expiresIn: '1h' }
-        );
+        // Send verification email using template
+        const verifyLink = `${process.env.CLIENT_URL}/verify-email?token=${verificationToken}&email=${newUser.email}`;
+        await sendEmail({
+            to: newUser.email,
+            subject: 'Verify your email to join DevMatch',
+            template: 'verifyEmail.html',
+            templateVars: { verify_link: verifyLink }
+        });
 
         // Prepare response data
         const responseData = {
-            message: 'User created successfully',
+            message: 'User created successfully. Please check your email to verify your account.',
             user: {
                 id: newUser._id,
                 name: newUser.name,
                 email: newUser.email,
                 role: newUser.role
-            },
-            token
+            }
         };
 
         // Only include CV URL in response if it exists (for programmers)
@@ -89,6 +99,10 @@ export const login = async(req, res) => {
         const user = await User.findOne({ email });
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
+        }
+        // Check if email is verified
+        if (!user.isEmailVerified) {
+            return res.status(403).json({ message: 'Please verify your email to login' });
         }
 
         // Check password
@@ -124,5 +138,64 @@ export const login = async(req, res) => {
     } catch (error) {
         console.error('Login error:', error);
         res.status(500).json({ message: 'Something went wrong' });
+    }
+};
+
+// Email verification controller
+export const verifyEmail = async(req, res) => {
+    console.log("VERIFY EMAIL:", req.query.token, req.query.email);
+    const { token, email } = req.query;
+    const user = await User.findOne({ email });
+    if (!user) {
+        console.log("User not found for:", email);
+        return res.redirect('/login?verified=notfound');
+    }
+    if (user.isEmailVerified) {
+        console.log("User already verified:", email);
+        return res.redirect('/login?verified=already');
+    }
+    if (user.emailVerificationToken !== token) {
+        console.log("Token invalid for:", email, token);
+        return res.redirect('/login?verified=invalidtoken');
+    }
+    user.isEmailVerified = true;
+    user.emailVerificationToken = undefined;
+    await user.save();
+    return res.redirect('/login?verified=success');
+};
+
+// Get user info from token
+export const getMe = async(req, res) => {
+    try {
+        const token = req.query.token;
+        if (!token) return res.status(401).json({ message: 'No token provided' });
+        let decoded;
+        try {
+            decoded = jwt.verify(token, process.env.JWT_SECRET);
+        } catch (err) {
+            return res.status(401).json({ message: 'Invalid token' });
+        }
+        const user = await User.findById(decoded.id).select('-password -emailVerificationToken');
+        if (!user) return res.status(404).json({ message: 'User not found' });
+        res.json(user);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+// Update role controller
+export const updateRole = async(req, res) => {
+    try {
+        const { userId, role } = req.body;
+        if (!['programmer', 'recruiter'].includes(role)) {
+            return res.status(400).json({ message: 'Invalid role' });
+        }
+        const user = await User.findByIdAndUpdate(userId, { role }, { new: true });
+        if (!user) return res.status(404).json({ message: 'User not found' });
+        // Generate a new JWT token with the updated role
+        const token = jwt.sign({ id: user._id, role: user.role, email: user.email }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        res.json({ user, token });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
