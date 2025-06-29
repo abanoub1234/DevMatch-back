@@ -7,7 +7,9 @@ const jobSchema = new mongoose.Schema({
     governorate: { type: String, required: true },
     recruiter_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, // relation to User (recruiter)
     created_at: { type: Date, default: Date.now },
-    status: { type: String, enum: ['open', 'closed'], default: 'open' }
+    status: { type: String, enum: ['open', 'closed'], default: 'open' },
+    work_mode: { type: String, enum: ['onsite', 'remotely'], required: true }, // onsite or remotely
+    job_type: { type: String, enum: ['full-time', 'part-time', 'by task'], required: true } // job type
 });
 
 const Job = mongoose.model('Job', jobSchema);

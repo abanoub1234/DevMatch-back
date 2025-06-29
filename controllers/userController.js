@@ -101,7 +101,7 @@ export const updateUserById = async (req, res) => {
 
     const merged = { ...user.toObject(), ...req.body };
     const allFields = [
-      'aboutMe', 'location', 'experience', 'skills', 'technology', 'image', 'name', 'email', 'role', 'password'
+      'aboutMe', 'location', 'experience', 'skills', 'technology', 'image', 'name', 'email', 'role', 'password', 'github'
     ];
     let isProfileComplete = allFields.every(field => {
       const value = merged[field];
@@ -120,6 +120,7 @@ export const updateUserById = async (req, res) => {
         updatedUser = await User.findByIdAndUpdate(req.params.id, req.body, { new: true });
       } catch (e) {}
     }
+    // Ensure github is included in the response
     res.json(updatedUser);
   } catch (err) {
     res.status(400).json({ message: err.message });
