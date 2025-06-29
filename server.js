@@ -4,9 +4,9 @@ import cors from "cors";
 import dotenv from "dotenv";
 import bodyParser from "body-parser";
 import connectDB from './models/db.js';
-
-import bodyParser from 'body-parser';
-
+import express from "express";
+import passport from "passport"; // ✅ جديد
+import "./config/passport.js";   // ✅ جديد
 
 // Routes
 import massageroute from "./routes/message.route.js";
@@ -38,6 +38,8 @@ app.use((req, res, next) => {
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
   next();
 });
+
+app.use(passport.initialize()); // ✅ جديد
 
 // routes
 app.use("/api/users", userRoutes);

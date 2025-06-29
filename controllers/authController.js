@@ -129,10 +129,7 @@ export const login = async(req, res) => {
             name: user.name,
             email: user.email,
             role: user.role,
-            isProfileComplete: user.isProfileComplete,
-            image:user.image
-          
-
+            isProfileComplete: user.isProfileComplete
         };
 
         // Only include CV URL if user is a programmer and has one
