@@ -59,7 +59,14 @@ export const signup = async(req, res) => {
         await newUser.save();
 
         // Send verification email using template
-        const verifyLink = `${process.env.CLIENT_URL}/verify-email?token=${verificationToken}&email=${newUser.email}`;
+        // Use SERVER_URL for backend endpoint, not CLIENT_URL
+        let serverUrl = process.env.SERVER_URL;
+        if (!serverUrl) {
+            // Fallback: try to build from request if env is missing
+            serverUrl = req.protocol + '://' + req.get('host');
+            console.warn('SERVER_URL not set in .env, using fallback:', serverUrl);
+        }
+        const verifyLink = `${serverUrl}/api/auth/verify-email?token=${verificationToken}&email=${newUser.email}`;
         await sendEmail({
             to: newUser.email,
             subject: 'Verify your email to join DevMatch',
@@ -146,22 +153,24 @@ export const verifyEmail = async(req, res) => {
     console.log("VERIFY EMAIL:", req.query.token, req.query.email);
     const { token, email } = req.query;
     const user = await User.findOne({ email });
+    let frontendUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+    let redirectPath = '/login?verified=';
     if (!user) {
         console.log("User not found for:", email);
-        return res.redirect('/login?verified=notfound');
+        return res.redirect(frontendUrl + redirectPath + 'notfound');
     }
     if (user.isEmailVerified) {
         console.log("User already verified:", email);
-        return res.redirect('/login?verified=already');
+        return res.redirect(frontendUrl + redirectPath + 'already');
     }
     if (user.emailVerificationToken !== token) {
         console.log("Token invalid for:", email, token);
-        return res.redirect('/login?verified=invalidtoken');
+        return res.redirect(frontendUrl + redirectPath + 'invalidtoken');
     }
     user.isEmailVerified = true;
     user.emailVerificationToken = undefined;
     await user.save();
-    return res.redirect('/login?verified=success');
+    return res.redirect(frontendUrl + redirectPath + 'success');
 };
 
 // Get user info from token
