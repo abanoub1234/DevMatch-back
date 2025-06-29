@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 const userSchema = new mongoose.Schema({
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
+    password: { type: String, required: false }, // allow null/undefined for Google users
     role: { type: String, required: true },
     registration_date: { type: Date, default: Date.now },
     location: String,
@@ -20,7 +20,10 @@ const userSchema = new mongoose.Schema({
     technology: [String],
     isProfileComplete: { type: Boolean, default: false },
     aboutMe: String,
-    isPaid: { type: Boolean, default: false } // Add isPaid flag
+    isPaid: { type: Boolean, default: false }, // Add isPaid flag
+    isEmailVerified: { type: Boolean, default: false },
+    emailVerificationToken: { type: String },
+    googleId: { type: String } // Add googleId field for Google OAuth
 });
 
 export default mongoose.model('User', userSchema);

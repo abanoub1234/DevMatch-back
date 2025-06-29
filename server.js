@@ -4,7 +4,10 @@ import cors from "cors";
 import dotenv from "dotenv";
 import bodyParser from "body-parser";
 import connectDB from './models/db.js';
-import express from "express";
+
+import bodyParser from 'body-parser';
+
+
 // Routes
 import massageroute from "./routes/message.route.js";
 import userRoutes from "./routes/userRoutes.js";
