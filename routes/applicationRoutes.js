@@ -11,6 +11,11 @@ router.post(
     authMiddleware.checkRole(['programmer']),
     applicationController.createApplication
 );
+router.get(
+    '/my-applications',
+     authMiddleware.authenticate, 
+     applicationController.getUserApplications
+    );
 
 // Recruiter: Get all applications for their jobs
 router.get(
@@ -72,5 +77,8 @@ router.get(
     authMiddleware.checkRole(['programmer']),
     applicationController.checkIfApplied
 );
+
+
+
 
 export default router;

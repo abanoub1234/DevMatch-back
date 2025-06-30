@@ -23,7 +23,8 @@ const userSchema = new mongoose.Schema({
     isPaid: { type: Boolean, default: false }, // Add isPaid flag
     isEmailVerified: { type: Boolean, default: false },
     emailVerificationToken: { type: String },
-    googleId: { type: String } // Add googleId field for Google OAuth
+    googleId: { type: String }, // Add googleId field for Google OAuth
+    github: String // GitHub profile link
 });
 
 export default mongoose.model('User', userSchema);

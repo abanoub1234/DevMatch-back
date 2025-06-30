@@ -7,7 +7,7 @@ import connectDB from './models/db.js';
 import express from "express";
 import passport from "passport"; // ✅ جديد
 import "./config/passport.js";   // ✅ جديد
-
+import followRoutes from './routes/followRoutes.js';
 // Routes
 import massageroute from "./routes/message.route.js";
 import userRoutes from "./routes/userRoutes.js";
@@ -51,7 +51,7 @@ app.use("/api/messages", massageroute);
 app.use("/api/messagesbroadcast", massagerouteBrodcast);
 app.use('/api/comments', commentroute);
 app.use('/api/payments', paymentRoutes);
-
+app.use('/api/follow', followRoutes);
 app.get('/test', (req, res) => {
   res.send('CORS is working');
 });

@@ -2,6 +2,7 @@ import Application from '../models/Application.mongo.js';
 import Job from '../models/Job.mongo.js';
 import { sendEmail } from '../utils/email.js';
 import { io } from '../lib/socket.js';
+import mongoose from 'mongoose';
 
 // Programmer applies to a job
 export const createApplication = async(req, res) => {
@@ -233,3 +234,77 @@ export const checkIfApplied = async(req, res) => {
         res.status(500).json({ message: 'Error checking application', error: error.message });
     }
 };
+
+export const getUserApplications = async (req, res) => {
+  try {
+    // Validate authentication
+    if (!req.user?.id) {
+      console.error("❌ Authentication error: Missing user ID");
+      return res.status(401).json({ 
+        success: false,
+        message: "Unauthorized: User not authenticated" 
+      });
+    }
+
+    // Validate user ID format
+    if (!mongoose.Types.ObjectId.isValid(req.user.id)) {
+      console.error("❌ Validation error: Invalid user ID format");
+      return res.status(400).json({ 
+        success: false,
+        message: "Invalid user ID format" 
+      });
+    }
+
+    // Process pagination parameters with defaults and constraints
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(parseInt(req.query.limit) || 6, 20); // Max limit of 20
+    const skip = (page - 1) * limit;
+
+    // Fetch applications with proper population
+    const [applications, total] = await Promise.all([
+      Application.find({ applicant_id: req.user.id })
+        .populate({
+          path: 'job_id',
+          select: 'title description specialization governorate status work_mode job_type created_at',
+          populate: {
+            path: 'recruiter_id',
+            select: 'name company_name image role'
+          }
+        })
+        .sort({ applied_at: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      Application.countDocuments({ applicant_id: req.user.id })
+    ]);
+
+    // Filter out applications with deleted jobs
+    const validApplications = applications.filter(app => app.job_id);
+
+    // Prepare response
+    const response = {
+      success: true,
+      data: validApplications,
+      meta: {
+        total,
+        page,
+        pages: Math.ceil(total / limit),
+        limit
+      }
+    };
+
+    res.status(200).json(response);
+
+  } catch (error) {
+    console.error("❌ Server error in getUserApplications:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to retrieve applications",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+      ...(process.env.NODE_ENV === 'development' && {
+        stack: error.stack
+      })
+    });
+  }
+};
+
