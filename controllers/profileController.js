@@ -80,6 +80,7 @@ export const editRecruiterProfile = async (req, res) => {
             image_base64 // Accept base64 image string from frontend
         } = req.body;
 
+
         const updateData = {
             company_name,
             company_description,
@@ -87,7 +88,8 @@ export const editRecruiterProfile = async (req, res) => {
             company_size,
             founded_year,
             linkedin,
-            location
+            location,
+            isProfileComplete: true // Mark profile as complete when editing
         };
 
         if (typeof image_base64 !== 'undefined') {
