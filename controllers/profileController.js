@@ -1,42 +1,23 @@
-// profileController.js
 import User from '../models/User.mongo.js';
-import multer from 'multer';
+import fs from 'fs';
 import path from 'path';
 
-// Configure Multer storage
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, 'public/images');
-    },
-    filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-        const ext = path.extname(file.originalname);
-        cb(null, 'profile-' + uniqueSuffix + ext);
-    }
-});
-
-// Configure file filter for images only
-const fileFilter = (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|gif/;
-    const mimetype = allowedTypes.test(file.mimetype);
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-
-    if (mimetype && extname) {
-        cb(null, true);
-    } else {
-        cb(new Error('Only image files are allowed!'), false);
-    }
+// Helper to save base64 image
+const saveBase64Image = (base64String, folder = 'public/images') => {
+    if (!base64String) return null;
+    const matches = base64String.match(/^data:(image\/\w+);base64,(.+)$/);
+    if (!matches) return null;
+    const ext = matches[1].split('/')[1];
+    const buffer = Buffer.from(matches[2], 'base64');
+    if (!fs.existsSync(folder)) fs.mkdirSync(folder, { recursive: true });
+    const filename = `profile-${Date.now()}-${Math.round(Math.random() * 1e9)}.${ext}`;
+    const filePath = path.join(folder, filename);
+    fs.writeFileSync(filePath, buffer);
+    return filePath;
 };
 
-// Initialize Multer middleware
-export const uploadImage = multer({
-    storage: storage,
-    fileFilter: fileFilter,
-    limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
-}).single('image');
-
 // Complete Recruiter Profile
-export const completeRecruiterProfile = async(req, res) => {
+export const completeRecruiterProfile = async (req, res) => {
     try {
         const userId = req.user.id;
         const {
@@ -46,7 +27,8 @@ export const completeRecruiterProfile = async(req, res) => {
             company_size,
             founded_year,
             linkedin,
-            location
+            location,
+            image_base64 // Accept base64 image string from frontend
         } = req.body;
 
         const updateData = {
@@ -60,8 +42,9 @@ export const completeRecruiterProfile = async(req, res) => {
             isProfileComplete: true
         };
 
-        if (req.file) {
-            updateData.image = req.file.path;
+        if (typeof image_base64 !== 'undefined') {
+            // Store base64 string directly in DB, even if empty string (to clear image)
+            updateData.image = image_base64;
         }
 
         const updatedUser = await User.findByIdAndUpdate(
@@ -83,7 +66,7 @@ export const completeRecruiterProfile = async(req, res) => {
 };
 
 // Edit Recruiter Profile
-export const editRecruiterProfile = async(req, res) => {
+export const editRecruiterProfile = async (req, res) => {
     try {
         const userId = req.user.id;
         const {
@@ -93,7 +76,8 @@ export const editRecruiterProfile = async(req, res) => {
             company_size,
             founded_year,
             linkedin,
-            location
+            location,
+            image_base64 // Accept base64 image string from frontend
         } = req.body;
 
         const updateData = {
@@ -106,8 +90,9 @@ export const editRecruiterProfile = async(req, res) => {
             location
         };
 
-        if (req.file) {
-            updateData.image = req.file.path;
+        if (typeof image_base64 !== 'undefined') {
+            // Store base64 string directly in DB, even if empty string (to clear image)
+            updateData.image = image_base64;
         }
 
         const updatedUser = await User.findByIdAndUpdate(
@@ -129,7 +114,7 @@ export const editRecruiterProfile = async(req, res) => {
 };
 
 // Get Recruiter Profile
-export const getRecruiterProfile = async(req, res) => {
+export const getRecruiterProfile = async (req, res) => {
     try {
         const userId = req.user.id;
         const user = await User.findById(userId).select('-password');
@@ -147,5 +132,5 @@ export const getRecruiterProfile = async(req, res) => {
             message: 'Error fetching recruiter profile',
             error: error.message
         });
-    }
+      }
 };

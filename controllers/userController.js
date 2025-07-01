@@ -99,6 +99,12 @@ export const updateUserById = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
+    // If image_base64 is present, store it directly in the image field
+    if (req.body.image_base64) {
+      req.body.image = req.body.image_base64;
+      delete req.body.image_base64;
+    }
+
     const merged = { ...user.toObject(), ...req.body };
     const allFields = [
       'aboutMe', 'location', 'experience', 'skills', 'technology', 'image', 'name', 'email', 'role', 'password', 'github'

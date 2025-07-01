@@ -39,8 +39,7 @@ const recruiterProfileSchema = Joi.object({
             "number.max": "Year cannot be in the future",
             "any.required": "Founded year is required"
         }),
-    image: Joi.string().uri().allow('').optional()
-});
+}).unknown(true);
 
 export const validateRecruiterProfile = (req, res, next) => {
     // Validate only the text fields, not the file
