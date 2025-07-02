@@ -62,76 +62,80 @@ export const deleteUser = async (req, res) => {
 // Update user by custom id field or MongoDB _id
 export const updateUserById = async (req, res) => {
   try {
-    // List of required fields for profile completion (must be in request body)
-    const requiredFields = [
-      'aboutMe', 'image', 'location', 'experience', 'skills', 'technology'
-    ];
+    const requiredFields = ['aboutMe', 'image', 'location', 'experience', 'skills', 'technology'];
+
     const missingFields = requiredFields.filter(field => {
       const value = req.body[field];
-      if (Array.isArray(value)) { return value.length === 0; }
+      if (Array.isArray(value)) return value.length === 0;
       return value === undefined || value === null || value === '';
     });
+
     if (missingFields.length > 0) {
       return res.status(400).json({
         message: `Missing required fields: ${missingFields.map(f => {
-          switch(f) {
+          switch (f) {
             case 'aboutMe': return 'About Me';
             case 'image': return 'Profile Image';
             case 'location': return 'Location';
             case 'experience': return 'Experience (years)';
-            case 'skills': return 'Skills (comma separated)';
-            case 'technology': return 'Technology (comma separated)';
+            case 'skills': return 'Skills';
+            case 'technology': return 'Technology';
             default: return f;
           }
         }).join(', ')}`
       });
     }
 
-    // Find the user first (by custom id or _id)
+    // Find user by custom id or _id
     let user = await User.findOne({ id: req.params.id });
     if (!user) {
       try {
         user = await User.findById(req.params.id);
       } catch (e) {}
     }
+
     if (!user) {
-      console.log(`[userController] User not found for update: ${req.params.id}`);
       return res.status(404).json({ message: "User not found" });
     }
 
-    // If image_base64 is present, store it directly in the image field
+    // If base64 image provided
     if (req.body.image_base64) {
       req.body.image = req.body.image_base64;
       delete req.body.image_base64;
     }
 
+    // Merge existing user with new updates
     const merged = { ...user.toObject(), ...req.body };
-    const allFields = [
-      'aboutMe', 'location', 'experience', 'skills', 'technology', 'image', 'name', 'email', 'role', 'password', 'github'
-    ];
-    let isProfileComplete = allFields.every(field => {
-      const value = merged[field];
-      if (Array.isArray(value)) { return value.length > 0; }
-      return value !== undefined && value !== null && value !== '';
+
+    // Check profile completeness
+    const allFields = ['aboutMe', 'location', 'experience', 'skills', 'technology', 'image', 'github'];
+    const isProfileComplete = allFields.every(field => {
+      const val = merged[field];
+      if (Array.isArray(val)) return val.length > 0;
+      return val !== undefined && val !== null && val !== '';
     });
+
+    // Add to body to be saved
     req.body.isProfileComplete = isProfileComplete;
 
+    // Now update using either custom ID or MongoDB _id
     let updatedUser = await User.findOneAndUpdate(
       { id: req.params.id },
       req.body,
       { new: true }
     );
+
     if (!updatedUser) {
-      try {
-        updatedUser = await User.findByIdAndUpdate(req.params.id, req.body, { new: true });
-      } catch (e) {}
+      updatedUser = await User.findByIdAndUpdate(req.params.id, req.body, { new: true });
     }
-    // Ensure github is included in the response
+
     res.json(updatedUser);
   } catch (err) {
+    console.error('[updateUserById] Error:', err);
     res.status(400).json({ message: err.message });
   }
 };
+
 
 // Mark user as paid (for frontend sync after payment)
 export const updateUserByIdPaid = async (userId) => {

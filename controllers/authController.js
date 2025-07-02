@@ -120,7 +120,7 @@ export const login = async(req, res) => {
 
         // Generate token
         const token = jwt.sign({ id: user._id, role: user.role, email: user.email },
-            process.env.JWT_SECRET, { expiresIn: '1h' }
+            process.env.JWT_SECRET, { expiresIn: '12h' }
         );
 
         // Prepare response data
@@ -195,15 +195,39 @@ export const getMe = async(req, res) => {
 // Update role controller
 export const updateRole = async(req, res) => {
     try {
-        const { userId, role } = req.body;
+        const { userId, role, cv_url } = req.body;
+
         if (!['programmer', 'recruiter'].includes(role)) {
             return res.status(400).json({ message: 'Invalid role' });
         }
-        const user = await User.findByIdAndUpdate(userId, { role }, { new: true });
+
+        // إعداد البيانات اللي هتتحدث
+        const updateFields = { role };
+
+        // لو الدور "programmer" و فيه CV URL يبقى ضيفه
+        if (role === 'programmer' && cv_url) {
+            try {
+                new URL(cv_url); // Validate format
+                updateFields.cv_url = cv_url;
+            } catch (err) {
+                return res.status(400).json({ message: 'Invalid CV URL format' });
+            }
+        }
+
+        // تحديث البيانات
+        const user = await User.findByIdAndUpdate(userId, updateFields, { new: true });
+
         if (!user) return res.status(404).json({ message: 'User not found' });
-        // Generate a new JWT token with the updated role
-        const token = jwt.sign({ id: user._id, role: user.role, email: user.email }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+        // إنشاء توكن جديد بعد التحديث
+        const token = jwt.sign(
+            { id: user._id, role: user.role, email: user.email },
+            process.env.JWT_SECRET,
+            { expiresIn: '1h' }
+        );
+
         res.json({ user, token });
+
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
