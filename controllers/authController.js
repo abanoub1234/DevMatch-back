@@ -104,6 +104,10 @@ export const login = async(req, res) => {
 
         // Find user
         const user = await User.findOne({ email });
+        // After finding the user
+        if (user.blocked) {
+            return res.status(403).json({ message: 'Account blocked due to exam failures.' });
+        }
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }

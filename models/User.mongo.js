@@ -24,7 +24,11 @@ const userSchema = new mongoose.Schema({
     isEmailVerified: { type: Boolean, default: false },
     emailVerificationToken: { type: String },
     googleId: { type: String }, // Add googleId field for Google OAuth
-    github: String // GitHub profile link
+    github: String ,
+    examPassed: { type: Boolean, default: false },
+    examAttempts: { type: Number, default: 0 },
+    blocked: { type: Boolean, default: false },
+
 });
 
 export default mongoose.model('User', userSchema);

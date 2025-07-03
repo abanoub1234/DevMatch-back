@@ -19,6 +19,7 @@ import massagerouteBrodcast from './routes/messageRoutesBrodCast.js';
 import commentroute from './routes/commentRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
 import { handleStripeWebhook } from './controllers/paymentController.js';
+import examroutes from './routes/examRoutes.js';
 
 dotenv.config();
 connectDB();
@@ -55,6 +56,7 @@ app.use('/api/follow', followRoutes);
 app.get('/test', (req, res) => {
   res.send('CORS is working');
 });
+app.use( examroutes);
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
